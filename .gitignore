@@ -1,0 +1,64 @@
+# Nextflow
+work/
+.nextflow/
+.nextflow.log*
+results/
+results_test/
+*.nf.test.snap
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+*.egg-info/
+dist/
+build/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+.terraform.lock.hcl
+
+# Genomic data — never commit
+*.fastq
+*.fastq.gz
+*.fq.gz
+*.bam
+*.bai
+*.cram
+*.vcf
+*.vcf.gz
+*.vcf.gz.tbi
+*.bcf
+*.bed
+*.fa
+*.fasta
+*.fai
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

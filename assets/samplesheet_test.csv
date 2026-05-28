@@ -1,0 +1,4 @@
+sample,fastq_1,fastq_2,sex,replicate
+HG001_rep1,https://raw.githubusercontent.com/nf-core/test-datasets/sarek/testdata/NA12878/HG001-NA12878-50x_1.fastq.gz,https://raw.githubusercontent.com/nf-core/test-datasets/sarek/testdata/NA12878/HG001-NA12878-50x_2.fastq.gz,F,1
+HG001_rep2,https://raw.githubusercontent.com/nf-core/test-datasets/sarek/testdata/NA12878/HG001-NA12878-50x_1.fastq.gz,https://raw.githubusercontent.com/nf-core/test-datasets/sarek/testdata/NA12878/HG001-NA12878-50x_2.fastq.gz,F,2
+HG001_rep3,https://raw.githubusercontent.com/nf-core/test-datasets/sarek/testdata/NA12878/HG001-NA12878-50x_1.fastq.gz,https://raw.githubusercontent.com/nf-core/test-datasets/sarek/testdata/NA12878/HG001-NA12878-50x_2.fastq.gz,F,3

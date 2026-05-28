@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  lint-and-test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER:     biomarker
+          POSTGRES_PASSWORD: biomarker
+          POSTGRES_DB:       biomarker
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pysam cyvcf2 pingouin scipy statsmodels pandas numpy \
+            fastapi "sqlalchemy[asyncio]" asyncpg alembic structlog \
+            tenacity httpx uvicorn plotly streamlit requests
+
+      - name: Lint with ruff
+        run: ruff check analysis/ api/ tests/
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://biomarker:biomarker@localhost:5432/biomarker
+        run: pytest tests/ -v --tb=short
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage.xml
+
+
+  nextflow-syntax:
+    name: Nextflow syntax check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Nextflow
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          nextflow -version
+
+      - name: Stub run — validates pipeline logic without executing processes
+        run: nextflow run main.nf -profile test -stub-run -ansi-log false
+        env:
+          NXF_ANSI_LOG: false
+
+
+  docker-build:
+    name: Docker build and push
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t bcp-api:ci .
+
+      - name: Smoke test — import succeeds
+        run: |
+          docker run --rm \
+            -e DATABASE_URL="postgresql+asyncpg://biomarker:biomarker@localhost:5432/biomarker" \
+            --entrypoint python \
+            bcp-api:ci \
+            -c "from api.main import app; print('Import OK')"
+
+      - name: Push to ECR (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          AWS_REGION:     ${{ secrets.AWS_REGION }}
+          ECR_REGISTRY:   ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: bcp-api
+        run: |
+          aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin $ECR_REGISTRY
+          docker tag bcp-api:ci $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker tag bcp-api:ci $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
