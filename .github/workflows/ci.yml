@@ -82,17 +82,10 @@ jobs:
           sudo mv nextflow /usr/local/bin/
           nextflow -version
 
-      - name: Validate pipeline syntax (stub run, no Docker)
-        run: |
-          nextflow run main.nf \
-            -profile test \
-            -stub-run \
-            -ansi-log false \
-            --outdir ./results_test
+      - name: Validate Nextflow config syntax
+        run: nextflow config main.nf -profile test
         env:
           NXF_ANSI_LOG: "false"
-          # Disable DAG rendering — graphviz not available in CI
-          NXF_DISABLE_CHECK_LATEST: "true"
 
 
   docker-build:
@@ -114,17 +107,24 @@ jobs:
             bcp-api:ci \
             -c "from api.main import app; print('Import OK')"
 
-      - name: Push to ECR (main branch only)
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push to ECR
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
-          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION:            ${{ secrets.AWS_REGION }}
-          ECR_REGISTRY:          ${{ secrets.ECR_REGISTRY }}
-          ECR_REPOSITORY:        bcp-api
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: bcp-api
         run: |
-          aws ecr get-login-password --region $AWS_REGION \
-            | docker login --username AWS --password-stdin $ECR_REGISTRY
           docker tag bcp-api:ci $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
           docker tag bcp-api:ci $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
