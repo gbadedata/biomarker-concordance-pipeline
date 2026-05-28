@@ -4,14 +4,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..database import get_db
 from ..schemas import HealthResponse
 
 router = APIRouter()
-get_db = None
 
 
 @router.get("", response_model=HealthResponse)
-async def health_check(db: AsyncSession = Depends(lambda: get_db())):
+async def health_check(db: AsyncSession = Depends(get_db)):
     try:
         result = await db.execute(text("SELECT COUNT(*) FROM pipeline_run"))
         count  = result.scalar_one()
