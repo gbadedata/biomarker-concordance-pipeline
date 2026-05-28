@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import io
-import math
 from pathlib import Path
 
 import numpy as np
@@ -29,7 +28,8 @@ def make_hapqy_summary(
     ]
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()))
-    w.writeheader(); w.writerows(rows)
+    w.writeheader()
+    w.writerows(rows)
     return buf.getvalue()
 
 

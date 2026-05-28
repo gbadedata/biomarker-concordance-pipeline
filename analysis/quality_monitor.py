@@ -8,9 +8,9 @@ Concordance → GA4GH-style threshold monitoring + Mann-Kendall trend test.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import Enum
-from typing import Sequence
+from typing import StrEnum
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ from scipy import stats
 logger = logging.getLogger(__name__)
 
 
-class WestgardRule(str, Enum):
+class WestgardRule(StrEnum):
     R1_2S  = "1_2s"
     R1_3S  = "1_3s"
     R2_2S  = "2_2s"
@@ -30,11 +30,11 @@ class WestgardRule(str, Enum):
 
 @dataclass
 class WestgardViolation:
-    rule:       WestgardRule
-    run_index:  int
-    run_id:     str
-    value:      float
-    is_warning: bool
+    rule:        WestgardRule
+    run_index:   int
+    run_id:      str
+    value:       float
+    is_warning:  bool
     description: str
 
 
@@ -54,7 +54,7 @@ class LeveyJenningsResult:
     in_control: bool
 
 
-class TrendDirection(str, Enum):
+class TrendDirection(StrEnum):
     STABLE    = "stable"
     DECLINING = "declining"
     IMPROVING = "improving"
@@ -99,7 +99,8 @@ def apply_westgard_rules(
         if abs(z) > 2.0:
             violations.append(WestgardViolation(
                 rule=WestgardRule.R1_2S, run_index=i, run_id=rid, value=v,
-                is_warning=True, description=f"{metric} = {v:.4f} outside ±2SD (warning)",
+                is_warning=True,
+                description=f"{metric} = {v:.4f} outside ±2SD (warning)",
             ))
 
         if i >= 1:
@@ -170,18 +171,17 @@ def monitor_concordance_trend(
     mk_alpha:     float = 0.05,
 ) -> ConcordanceTrendResult:
     vals    = list(values)
-    run_ids = list(run_ids)
-
-    mk  = stats.kendalltau(range(len(vals)), vals)
-    tau = float(mk.statistic)
-    p   = float(mk.pvalue)
+    rids    = list(run_ids)
+    mk      = stats.kendalltau(range(len(vals)), vals)
+    tau     = float(mk.statistic)
+    p       = float(mk.pvalue)
 
     if p < mk_alpha:
         trend = TrendDirection.DECLINING if tau < 0 else TrendDirection.IMPROVING
     else:
         trend = TrendDirection.STABLE
 
-    below = [rid for rid, v in zip(run_ids, vals) if v < threshold]
+    below = [rid for rid, v in zip(rids, vals) if v < threshold]
 
     alert = None
     if below or trend == TrendDirection.DECLINING:
@@ -194,7 +194,7 @@ def monitor_concordance_trend(
 
     return ConcordanceTrendResult(
         metric=metric, variant_type=variant_type,
-        run_ids=run_ids, values=vals, threshold=threshold,
+        run_ids=rids, values=vals, threshold=threshold,
         trend=trend, mk_tau=tau, mk_p=p,
         below_threshold_runs=below, alert=alert,
     )

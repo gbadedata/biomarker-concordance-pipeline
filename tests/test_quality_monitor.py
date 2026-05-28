@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import math
-import numpy as np
-import pytest
 
 from analysis.quality_monitor import (
+    TrendDirection,
     WestgardRule,
     apply_westgard_rules,
     build_levey_jennings,
     monitor_concordance_trend,
-    TrendDirection,
 )
 
 
