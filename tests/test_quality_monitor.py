@@ -7,8 +7,11 @@ import numpy as np
 import pytest
 
 from analysis.quality_monitor import (
-    WestgardRule, apply_westgard_rules, build_levey_jennings,
-    monitor_concordance_trend, TrendDirection,
+    WestgardRule,
+    apply_westgard_rules,
+    build_levey_jennings,
+    monitor_concordance_trend,
+    TrendDirection,
 )
 
 
@@ -26,7 +29,7 @@ class TestWestgardRules:
 
     def test_no_violations_for_stable_series(self):
         viol = apply_westgard_rules(self._stable_vals(), self._run_ids(), self.mean, self.sd)
-        assert all(v.is_warning for v in viol)  # only warnings allowed, no rejections
+        assert all(v.is_warning for v in viol)
 
     def test_1_3s_triggered(self):
         vals = self._stable_vals()
@@ -56,8 +59,10 @@ class TestWestgardRules:
 
 class TestLeveyJennings:
     def test_in_control_series(self):
-        mean = 0.48; sd = 0.01; n = 20
-        vals    = [mean + sd * 0.3 * math.sin(i * 0.7) for i in range(n)]
+        mean = 0.48
+        sd = 0.01
+        n = 20
+        vals = [mean + sd * 0.3 * math.sin(i * 0.7) for i in range(n)]
         run_ids = [f"run_{i:03d}" for i in range(n)]
         lj = build_levey_jennings(vals, run_ids)
         rejections = [v for v in lj.violations if not v.is_warning]
