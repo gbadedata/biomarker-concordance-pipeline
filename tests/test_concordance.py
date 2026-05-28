@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import pytest
+
 from analysis.concordance import (
-    _cohen_kappa, _parse_hapqy_summary, compute_concordance, report_to_dict,
+    _cohen_kappa,
+    _parse_hapqy_summary,
+    compute_concordance,
+    report_to_dict,
 )
 
 
@@ -33,8 +37,11 @@ class TestParseHapqySummary:
 
     def test_missing_type_raises(self, tmp_path):
         p = tmp_path / "bad.csv"
-        p.write_text("Type,Filter,Subtype,TRUTH.TP,QUERY.FP,TRUTH.FN,METRIC.Precision,METRIC.Recall,METRIC.F1_Score\n"
-                     "SNP,PASS,*,100,5,3,0.95,0.97,0.96\n")
+        p.write_text(
+            "Type,Filter,Subtype,TRUTH.TP,QUERY.FP,TRUTH.FN,"
+            "METRIC.Precision,METRIC.Recall,METRIC.F1_Score\n"
+            "SNP,PASS,*,100,5,3,0.95,0.97,0.96\n"
+        )
         with pytest.raises(ValueError, match="INDEL"):
             _parse_hapqy_summary(p)
 
@@ -54,8 +61,8 @@ class TestComputeConcordance:
         r = compute_concordance("HG001", "run_003", hapqy_csv_passing)
         for m in [r.snv, r.indel]:
             assert 0 <= m.precision <= 1
-            assert 0 <= m.recall    <= 1
-            assert 0 <= m.f1_score  <= 1
+            assert 0 <= m.recall <= 1
+            assert 0 <= m.f1_score <= 1
             assert -1 <= m.cohen_kappa <= 1
 
     def test_custom_threshold_fails_good_data(self, hapqy_csv_passing):
@@ -68,5 +75,6 @@ class TestComputeConcordance:
 
     def test_report_serialisable(self, hapqy_csv_passing):
         import json
+
         r = compute_concordance("HG001", "run_005", hapqy_csv_passing)
         json.dumps(report_to_dict(r))
